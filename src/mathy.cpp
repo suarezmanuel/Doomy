@@ -4,6 +4,7 @@
 
 #include "headers/mathy.h"
 #include <stdlib.h>
+#include <iostream>
 
 point::point (int x=0, int y=0) {
     this->x = x;
@@ -117,6 +118,18 @@ ray::ray (const point player_pos, const point dst) {
     speed = point(RAY_X_SPEED, RAY_Y_SPEED);
 }
 
+ray::ray (const point player_pos, const double len, const double angle) {
+    // help ensures that approximation to 0, 1, -1 are ints and not fp
+    // by changing cos and sin, we added 90 degrees to our triangle such that
+    // up is zero degrees and it goes counter clockwise
+    int x = help(cos(to_radians(angle))) * len;
+    int y = help(sin(to_radians(angle))) * len;
+    
+    point dst {player_pos[0] + x, player_pos[1] + y};
+    dir = line (player_pos, dst);
+    speed = point(RAY_X_SPEED, RAY_Y_SPEED);
+}
+
 ray::ray (ray& other) {
     // use copy ctors
     dir = line (other.get_dir());
@@ -170,9 +183,58 @@ ray& ray::operator= (const ray& r) {
     return *this;
 }
 
+// help ensures that approximation to 0, 1, -1 are ints and not fp
+double help (double n) {
+    if (n > 0 && n < EPSILON) {
+        return 0;
+    }
+    if (n > 1 - EPSILON && n < 1) {
+        return 1;
+    }
+
+    if (n > -1 + EPSILON && n < -1) {
+        return -1;
+    }
+    return n;
+}
+
+double to_radians (double degrees) {
+    return (degrees * M_PI) / 180;
+}
+
+double to_degrees (double radians) {
+    return (radians * 180) / M_PI; 
+}
 
 int sgn (double n) {
     if (n > 0) { return 1; }
     if (n < 0) { return -1; }
     return 0;
+}
+
+void test () {
+    // this works good :)
+    // std::cout << help(sin(to_radians(0))) << std::endl;
+    // std::cout << help(sin(to_radians(90))) << std::endl;
+    // std::cout << help(sin(to_radians(180))) << std::endl;
+    // std::cout << help(sin(to_radians(270))) << std::endl;
+    
+
+    // this works good :>
+     // imagine unit-circle, sin and cos
+    // ray test1 {{250, 250}, 1, 0}; // expected {251, 250}
+    // ray test2 {{250, 250}, 1, 90}; // expected {250, 251}
+    // ray test3 {{250, 250}, 1, 180}; // expected {249, 250}
+    // ray test4 {{250, 250}, 1, 270}; // expected {250, 249}
+    
+    // std::cout << "test1 dir end: " << test1.get_dir()[1][0] << " " <<  test1.get_dir()[1][1] << std::endl;
+    // std::cout << "test2 dir end: " << test2.get_dir()[1][0] << " " <<  test2.get_dir()[1][1] << std::endl;
+    // std::cout << "test3 dir end: " << test3.get_dir()[1][0] << " " <<  test3.get_dir()[1][1] << std::endl;
+    // std::cout << "test4 dir end: " << test4.get_dir()[1][0] << " " <<  test4.get_dir()[1][1] << std::endl;
+
+    // this works :}
+    // ray test1 {{250, 250}, 1, 270};
+    // ray test2 {{250, 250}, 1, -90}; // expected same value
+    // std::cout << "test1 dir end: " << test1.get_dir()[1][0] << " " <<  test1.get_dir()[1][1] << std::endl;
+    // std::cout << "test2 dir end: " << test1.get_dir()[1][0] << " " <<  test1.get_dir()[1][1] << std::endl;
 }
