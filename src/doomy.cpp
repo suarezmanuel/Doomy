@@ -2,31 +2,14 @@
 // all important code is in this .cpp file, recommended to check this one first.
 // which contains all the logic, and only afterward go for the definitions.
 
-#include <iostream>
-#include <vector>
-#include "headers/mathy.h"
-#include <SDL2/SDL.h>
-
-// everything here is in pixels
-#define XBLOCKS 10
-#define YBLOCKS 10
-#define SCREENWIDTH 500
-#define SCREENHEIGHT 500
-#define BLOCKWIDTH SCREENWIDTH/XBLOCKS
-#define BLOCKHEIGHT SCREENHEIGHT/YBLOCKS
-// in pixels
-#define FOVRADIUS 50
-// taking in account the radius is bigger than a block's side
-#define FOV_RADIUS_IN_BLOCKS ceil(FOVRADIUS/BLOCKHEIGHT)
-#define FOVANGLE 120
-#define RAYDEFAULTLEN 1
+#include "headers/doomy.h"
 
 enum blocks {
     red, blue, green
 };
 
 // TODO: change this
-SDL_Color colors[] = {SDL_Color{255,0,0,255}, SDL_Color{0,255,0,255}, SDL_Color{0,0,255,255}};
+SDL_Color colors[3] = {SDL_Color{255,0,0,255}, SDL_Color{0,255,0,255}, SDL_Color{0,0,255,255}};
 
 int grid [XBLOCKS][YBLOCKS] = {
         {red,0,0,0,0,0,0,0,0,0},
@@ -41,11 +24,12 @@ int grid [XBLOCKS][YBLOCKS] = {
         {red,red,red,red,red,red,red,0,0,0}
 };
 
+std::vector<ray> rays;
 
+// some harmless definitions
 point step (ray& r);
-void draw_line_on_screen (ray& r, SDL_Color c, SDL_Renderer*& renderer);
+void draw_line_on_screen (SDL_Renderer*& renderer, SDL_Color c, ray& r);
 
-void draw_line_on_screen (ray& r, SDL_Color c);
 
 // defined here as we need to know the screen, blocks info
 // returns the square of the ray end
@@ -61,97 +45,44 @@ int* ray::get_square_its_on() {
 }
 
 
-std::vector<ray*> rays;
-/// TODO: do I really need to use dynamic allocations?
-void init_ray_vector() {
-    for (int i = 0; i < FOVRADIUS; i++)
-    {
-        rays.push_back((ray*) malloc (sizeof(ray)));
-    }
-}
-
-// you sense a fishy smell around the lines of code below..
-void empty_ray_vector() {
-    for (ray*& r : rays) {
-        free (r);
-    }
-}
-
 void cast_rays (point& starting_pos) {
     int theta = FOVANGLE/2;
     // up is zero degrees and it goes counter clockwise
     // -tetha is supposed to work
-    int i = -theta;
-    for (ray*& r : rays) {
-        r = new ray (starting_pos, (double)RAYDEFAULTLEN, (double)i);
-        // should go from -theta to theta
-        i += 1;
+
+    /// TODO: adjust angle with direction, player will always look up with this
+    for (int i = -theta; i < theta; i++) {
+        ray* r = new ray (starting_pos, (double)RAYDEFAULTLEN, (double)i);
+        rays.push_back(*r);
     }
 }
 
 void step_and_draw_all (SDL_Renderer*& renderer) {
 
-    for (ray*& r : rays) {
-    
+    for (ray& ray : rays) {
+
         // won't step if already hit
-        point next = step(*r);
+        point next = step(ray);
+    
+        std::cout << "priviet" << std::endl;
 
-        if (r->check_if_has_hit()) {
-            int* block = r->get_square_its_on();
-            draw_line_on_screen (*r, colors[ grid[block[0]][block[1]] ], renderer);
+        // draw ray as red
+        point s (ray.get_dir()[0]);
+        SDL_SetRenderDrawColor(renderer, 255,0,0,255);
+        SDL_RenderDrawLine(renderer, s[0], s[1], next[0], next[1]);
+        // draw next as blue
+        SDL_RenderDrawPoint(renderer, next[0], next[1]);
+        SDL_RenderPresent(renderer);
+
+
+        if (ray.check_if_has_hit()) {
+            int* block = ray.get_square_its_on();
+            int block_color = grid[block[0]][block[1]];
+            draw_line_on_screen (renderer, colors[block_color], ray);
         } else {
-            r->get_dir().set_e(next);
+            ray.get_dir().set_e(next);
         }
     }
-}
-
-
-
-int main (int argc, char* argv[]) {
-    
-    SDL_Init(SDL_INIT_EVERYTHING);
-
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-    SDL_CreateWindowAndRenderer(SCREENWIDTH, SCREENHEIGHT, 0, &window, &renderer);   
-
-    if (window == NULL) {
-        std::cout << "Could not create window: " << SDL_GetError() << std::endl;
-    }
-
-
-    point starting_pos = {SCREENWIDTH/2, SCREENHEIGHT/2};
-    init_ray_vector();
-    cast_rays(starting_pos); // adds rays to ray vector
-    // FOV_RADIUS is in pixels, the rays advance in blocks
-    for (int i = 0; i < FOV_RADIUS_IN_BLOCKS; ++i) {
-        step_and_draw_all(renderer); // steps each ray until hits, if hits then draw
-    }
-    empty_ray_vector();
-
-    SDL_RenderPresent(renderer);
-    
-    SDL_Event windowEvent;
-    bool running = true;
-    bool test_done = false;
-    while (running) {
-
-        if (SDL_PollEvent(&windowEvent)) {
-            
-            switch (windowEvent.type) {
-                case SDL_QUIT:
-                    running = false;
-                    break;
-            }
-        }
-
-    
-        // if (!test_done) {
-        //     test();
-        //     test_done = true;
-        // }
-    }
-    return 0;
 }
 
 
@@ -223,7 +154,7 @@ point step (ray& r) {
     }
 }
 
-void draw_line_on_screen (ray& r, SDL_Color c, SDL_Renderer*& renderer) {
+void draw_line_on_screen (SDL_Renderer*& renderer, SDL_Color c, ray& r){
     // check distance between dir line's inverse (the players camera) and dir
     float* eq = r.get_dir().get_equation();
     // extended equation of the type ax + by + c = 0 for dir

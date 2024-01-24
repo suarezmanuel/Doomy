@@ -2,8 +2,8 @@
 // Created by Manuel Suarez on 22/01/2024.
 //
 
-#ifndef DOOMY_MATHY_H
-#define DOOMY_MATHY_H
+#ifndef MATHY_H
+#define MATHY_H
 
 #define M_PI   3.14159265358979323846
 #define EPSILON 1.e-10
@@ -12,6 +12,7 @@
 
 // using from here sqrt and pow, and abs
 #include <cmath>
+#include <SDL2/SDL.h>
 
 class point {
 
@@ -32,6 +33,8 @@ public:
     int operator[] (int i) const;
 
     point& operator= (const point& p);
+
+    void draw (SDL_Renderer*& renderer, SDL_Color c);
 };
 
 
@@ -66,6 +69,10 @@ public:
     point operator[] (int i);
 
     line& operator= (const line& l);
+
+    // point& intersection (const line& other);
+
+    void draw (SDL_Renderer*& renderer, SDL_Color c);
 };
 
 class ray {
@@ -83,7 +90,7 @@ public:
     // angle 0 is right (we are in radians, imagine unit-circle)
     ray (const point player_pos, const double len, const double angle);
     
-    ray (ray& other);
+    // ray (ray& other);
 
     line get_dir();
 
@@ -99,6 +106,7 @@ public:
 
     ray& operator= (const ray& r);
 
+    // void draw (SDL_Renderer*& renderer, SDL_Color c);
 };
 
 double help (double n);
@@ -111,4 +119,4 @@ int sgn (double n);
 
 void test ();
 
-#endif //DOOMY_MATHY_H
+#endif //MATHY_H

@@ -16,17 +16,9 @@ point::point (point const &other) {
     this->y = other.y;
 }
 
-//    int get_x () {
-//        return x;
-//    }
-
 void point::set_x (int x) {
     this->x = x;
 }
-
-//    int get_y () {
-//        return y;
-//    }
 
 void point::set_y (int y) {
     this->y = y;
@@ -48,6 +40,11 @@ point& point::operator= (const point& p) {
     // these are not overloaded
     this->x = p.x;
     this->y = p.y;
+}
+
+void point::draw (SDL_Renderer*& renderer, SDL_Color c) {
+    SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
+    SDL_RenderDrawPoint(renderer, x, y);
 }
 
 
@@ -112,6 +109,13 @@ line& line::operator= (const line& l) {
     this->e = l.e;
 }
 
+// point& line::intersection (const line& other) {
+//     return;
+// }
+
+void line::draw (SDL_Renderer*& renderer, SDL_Color c) {
+
+}
 
 ray::ray (const point player_pos, const point dst) {
     dir = line(player_pos, dst);
@@ -130,11 +134,11 @@ ray::ray (const point player_pos, const double len, const double angle) {
     speed = point(RAY_X_SPEED, RAY_Y_SPEED);
 }
 
-ray::ray (ray& other) {
-    // use copy ctors
-    dir = line (other.get_dir());
-    speed = point (other.get_speed());
-}
+// ray::ray (ray& other) {
+//     // use copy ctors
+//     dir = line (other.get_dir());
+//     speed = point (other.get_speed());
+// }
 
 line ray::get_dir() {
     // copy dir
